@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng Quay May Mắn - Đồng Biến, Nghịch Biến & Cực Trị Hàm Số</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- KaTeX CSS & JS for Precision Math Typesetting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="initKaTeX()"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Pointer Bounce Animation */
+        .pointer-bounce {
+            animation: pointerBounce 0.6s infinite alternate ease-in-out;
+        }
+
+        @keyframes pointerBounce {
+            from { transform: translateY(0) rotate(0deg); }
+            to { transform: translateY(-7px) rotate(0deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+
+        .katex-display {
+            margin: 0.4em 0 !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-5 text-slate-100 flex flex-col justify-between min-h-screen">
+
+    <!-- Header Section -->
+    <header class="max-w-6xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 glass-panel p-4 rounded-2xl shadow-2xl">
+        <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 bg-gradient-to-tr from-amber-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-dharmachakra text-white animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-indigo-200 to-pink-300">
+                    VÒNG QUAY MAY MẮN
+                </h1>
+                <p class="text-xs text-slate-400 font-medium">Toán 12: Đơn điệu & Cực trị của Hàm số</p>
+            </div>
+        </div>
+
+        <!-- Controls & Scoreboard -->
+        <div class="flex items-center gap-3">
+            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 text-amber-400 rounded-xl border border-slate-700/60 transition shadow flex items-center gap-2 text-xs font-semibold">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-sm"></i>
+                <span id="soundLabel" class="hidden sm:inline">Âm thanh: Bật</span>
+            </button>
+
+            <div class="flex items-center gap-3 bg-slate-900/90 px-4 py-2 rounded-xl border border-slate-700/60 shadow-inner">
+                <div class="text-center px-2 border-r border-slate-700/80">
+                    <span class="text-[10px] text-slate-400 block font-bold tracking-wider uppercase">Điểm Số</span>
+                    <span id="score-display" class="text-lg md:text-xl font-black text-amber-400">0</span>
+                </div>
+                <div class="text-center px-2">
+                    <span class="text-[10px] text-slate-400 block font-bold tracking-wider uppercase">Tiến Độ</span>
+                    <span id="progress-display" class="text-lg md:text-xl font-black text-indigo-400">0/15</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Grid -->
+    <main class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-center my-auto">
+
+        <!-- Left Column: Interactive Wheel Canvas -->
+        <div class="lg:col-span-7 glass-panel p-5 md:p-6 rounded-3xl flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[460px]">
+            
+            <!-- Wheel Pointer -->
+            <div class="relative w-full max-w-[360px] sm:max-w-[420px] aspect-square flex items-center justify-center my-2">
+                <div class="absolute -top-3 z-20 flex flex-col items-center pointer-events-none pointer-bounce">
+                    <div class="w-9 h-9 bg-amber-400 rounded-full shadow-lg border-2 border-white flex items-center justify-center text-slate-950 font-black text-xs">
+                        <i class="fa-solid fa-caret-down text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Canvas Element -->
+                <canvas id="wheelCanvas" width="500" height="500" class="w-full h-full drop-shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-transform duration-100 ease-out"></canvas>
+
+                <!-- Spin Trigger Button -->
+                <button id="spinBtn" onclick="spinWheel()" class="absolute z-10 w-20 h-20 bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-slate-950 font-black text-lg rounded-full border-4 border-slate-900 shadow-[0_0_30px_rgba(245,158,11,0.6)] flex flex-col items-center justify-center active:scale-95 transition duration-200 group">
+                    <span class="text-sm font-black tracking-wider">QUAY</span>
+                    <i class="fa-solid fa-rotate text-xs group-hover:rotate-180 transition-transform duration-500 mt-0.5"></i>
+                </button>
+            </div>
+
+            <!-- Wheel Status Helper -->
+            <div id="wheel-status" class="mt-3 text-center text-xs md:text-sm font-semibold text-slate-300 bg-slate-900/60 px-4 py-2 rounded-full border border-slate-700/50">
+                👉 Nhấn nút <strong class="text-amber-400">QUAY</strong> để thử vận may chọn câu hỏi!
+            </div>
+        </div>
+
+        <!-- Right Column: 15 Questions Matrix -->
+        <div class="lg:col-span-5 glass-panel p-5 md:p-6 rounded-3xl flex flex-col gap-5 h-full justify-between">
+            <div>
+                <h2 class="text-base md:text-lg font-bold text-slate-100 flex items-center gap-2 mb-1">
+                    <i class="fa-solid fa-list-check text-indigo-400"></i>
+                    Danh Sách 15 Câu Hỏi
+                </h2>
+                <p class="text-xs text-slate-400">Quay ngẫu nhiên hoặc bấm trực tiếp vào ô chưa trả lời</p>
+            </div>
+
+            <!-- Question Legend -->
+            <div class="flex flex-wrap gap-2 text-[11px]">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Nhận biết (5)
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-sky-400"></span> Thông hiểu (8)
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-rose-400"></span> Vận dụng (2)
+                </span>
+            </div>
+
+            <!-- 15 Question Matrix Grid -->
+            <div id="question-grid" class="grid grid-cols-5 gap-2 my-auto">
+                <!-- Javascript populates 15 buttons -->
+            </div>
+
+            <div class="pt-3 border-t border-slate-700/60">
+                <button onclick="resetGame()" class="w-full py-2.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-600/50 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate"></i> Bắt Đầu Lại Trò Chơi
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-4 text-center text-[11px] text-slate-500">
+        Ứng Dụng Học Tập Tương Tác Toán 12 &bull; Đơn điệu, Cực trị & Bài toán thực tế
+    </footer>
+
+    <!-- Modal for Question & Interactive Verification -->
+    <div id="questionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div id="modalContainer" class="glass-panel max-w-2xl w-full max-h-[92vh] rounded-3xl overflow-hidden flex flex-col border border-indigo-500/30 shadow-2xl transform scale-95 transition-transform duration-300">
+            
+            <!-- Modal Header -->
+            <div class="bg-slate-900/90 px-5 py-3.5 border-b border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span id="modal-level-tag" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide">
+                        Mức Độ
+                    </span>
+                    <h3 id="modal-title" class="font-extrabold text-slate-100 text-base md:text-lg">
+                        Câu Hỏi #
+                    </h3>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div id="timer-box" class="flex items-center gap-1.5 bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-amber-300 text-xs font-bold">
+                        <i class="fa-solid fa-stopwatch text-amber-400"></i>
+                        <span id="timer-display">45s</span>
+                    </div>
+                    <span id="modal-points" class="text-amber-400 font-extrabold text-xs md:text-sm bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
+                        +10 Điểm
+                    </span>
+                </div>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="p-5 md:p-6 overflow-y-auto space-y-5">
+                <!-- Question Statement -->
+                <div id="question-text" class="text-slate-100 font-medium text-sm md:text-base leading-relaxed"></div>
+
+                <!-- SVG Container for High-Precision Variation Tables (BBT) & Graphs -->
+                <div id="visual-container" class="hidden my-3 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center overflow-x-auto shadow-inner"></div>
+
+                <!-- Multiple Choice Options -->
+                <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1"></div>
+
+                <!-- Detailed Explanation Step-by-Step Box -->
+                <div id="explanation-box" class="hidden bg-indigo-950/60 border border-indigo-500/40 rounded-2xl p-4 space-y-2">
+                    <div class="flex items-center gap-2 text-indigo-300 font-bold text-xs md:text-sm">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i> Lời Giải Chi Tiết:
+                    </div>
+                    <div id="explanation-text" class="text-slate-300 text-xs md:text-sm leading-relaxed space-y-1"></div>
+                </div>
+            </div>
+
+            <!-- Modal Footer Controls -->
+            <div id="modal-footer" class="bg-slate-900/90 px-5 py-3.5 border-t border-slate-700/60 flex items-center justify-between gap-3">
+                <div id="result-feedback" class="font-bold text-xs md:text-sm flex items-center gap-2"></div>
+                <button id="next-btn" onclick="closeModal()" class="hidden px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-lg transition">
+                    Tiếp Tục <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Completion Celebration Modal -->
+    <div id="completionModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 text-center space-y-5 border border-amber-500/40 shadow-2xl">
+            <div class="w-16 h-16 bg-amber-400/20 text-amber-400 rounded-full flex items-center justify-center text-3xl mx-auto border border-amber-400/40 shadow-[0_0_25px_rgba(245,158,11,0.3)]">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div>
+                <h3 class="text-xl md:text-2xl font-black text-slate-100">HOÀN THÀNH XUẤT SẮC!</h3>
+                <p class="text-slate-400 text-xs mt-1">Bạn đã chinh phục toàn bộ 15 câu hỏi Đơn điệu & Cực trị.</p>
+            </div>
+
+            <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div class="flex justify-between items-center text-xs md:text-sm">
+                    <span class="text-slate-400">Tổng điểm tích lũy:</span>
+                    <span id="final-score" class="text-xl font-black text-amber-400">0</span>
+                </div>
+                <div class="flex justify-between items-center text-xs md:text-sm">
+                    <span class="text-slate-400">Số câu đúng:</span>
+                    <span id="final-correct" class="text-sm font-bold text-emerald-400">0 / 15</span>
+                </div>
+                <div class="flex justify-between items-center text-xs md:text-sm">
+                    <span class="text-slate-400">Danh hiệu đạt được:</span>
+                    <span id="final-badge" class="text-xs md:text-sm font-bold text-indigo-300">Bậc Thầy Giải Tích</span>
+                </div>
+            </div>
+
+            <button onclick="resetGame(); hideCompletionModal();" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black rounded-xl shadow-lg transition text-sm">
+                Thử Sức Lại Vòng Khác
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. WEB AUDIO API SOUND SYSTEM
+           ========================================================================== */
+        let audioCtx = null;
+        let isSoundOn = true;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            const icon = document.getElementById('soundIcon');
+            const label = document.getElementById('soundLabel');
+            if (isSoundOn) {
+                icon.className = 'fa-solid fa-volume-high text-sm';
+                label.innerText = 'Âm thanh: Bật';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-sm text-slate-500';
+                label.innerText = 'Âm thanh: Tắt';
+            }
+        }
+
+        function playClickSound() {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(650, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.04);
+            } catch(e) {}
+        }
+
+        function playCorrectSound() {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.3);
+                });
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } catch(e) {}
+        }
+
+        /* ==========================================================================
+           2. 15 QUESTIONS DATABASE (MATH 12 - MONOTONICITY & EXTREMA)
+           ========================================================================== */
+        const questionsData = [
+            // --- 5 CÂU NHẬN BIẾT (NB - 10 Điểm) ---
+            {
+                id: 1,
+                level: 'NB',
+                levelName: 'Nhận Biết',
+                points: 10,
+                color: '#10b981',
+                text: "Cho hàm số $y = f(x)$ có bảng biến thiên dưới đây. Hàm số đã cho **đồng biến** trên khoảng nào?",
+                type: 'bbt_nb1',
+                options: [
+                    "$(-\\infty; 0)$",
+                    "$(0; 2)$",
+                    "$(2; +\\infty)$",
+                    "$(-1; 3)$"
+                ],
+                correct: 1,
+                explanation: "Dựa vào bảng biến thiên, $f'(x) > 0$ trên khoảng $(0; 2)$ và mũi tên của $f(x)$ đi lên ($\u2197$) từ $-1$ đến $3$. Do đó hàm số đồng biến trên khoảng $(0; 2)$."
+            },
+            {
+                id: 2,
+                level: 'NB',
+                levelName: 'Nhận Biết',
+                points: 10,
+                color: '#10b981',
+                text: "Cho hàm số $y = f(x)$ có bảng biến thiên như hình bên. Giá trị **cực đại** ($y_{CĐ}$) của hàm số đã cho bằng bao nhiêu?",
+                type: 'bbt_nb2',
+                options: [
+                    "$x = 1$",
+                    "$y = 5$",
+                    "$x = -1$",
+                    "$y = 1$"
+                ],
+                correct: 1,
+                explanation: "Giá trị cực đại là giá trị của $y$ tại điểm cực đại. Tại $x = 1$, đạo hàm $f'(x)$ đổi dấu từ dương sang âm và mũi tên đạt đỉnh tại $y = 5$. Do đó $y_{CĐ} = 5$."
+            },
+            {
+                id: 3,
+                level: 'NB',
+                levelName: 'Nhận Biết',
+                points: 10,
+                color: '#10b981',
+                text: "Cho hàm số $y = f(x)$ có đạo hàm $f'(x) = x(x - 2)^2, \\forall x \\in \\mathbb{R}$. Số điểm **cực trị** của hàm số là:",
+                options: [
+                    "$0$",
+                    "$1$",
+                    "$2$",
+                    "$3$"
+                ],
+                correct: 1,
+                explanation: "Ta có $f'(x) = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$. Nghiệm $x = 2$ là nghiệm bội hai (kép) nên $f'(x)$ không đổi dấu khi qua $x = 2$. Chỉ có $x = 0$ là nghiệm đơn làm $f'(x)$ đổi dấu. Vậy hàm số có đúng $1$ điểm cực trị."
+            },
+            {
+                id: 4,
+                level: 'NB',
+                levelName: 'Nhận Biết',
+                points: 10,
+                color: '#10b981',
+                text: "Cho hàm số $y = f(x)$ có đồ thị như hình vẽ dưới đây. Điểm **cực tiểu** của đồ thị hàm số là điểm nào?",
+                type: 'graph_nb4',
+                options: [
+                    "$(1; -2)$",
+                    "$(-1; 2)$",
+                    "$(0; 0)$",
+                    "$(2; 1)$"
+                ],
+                correct: 0,
+                explanation: "Đồ thị hàm số có điểm lõm thấp cục bộ tại tọa độ $(1; -2)$. Do đó điểm cực tiểu của đồ thị hàm số là $(1; -2)$."
+            },
+            {
+                id: 5,
+                level: 'NB',
+                levelName: 'Nhận Biết',
+                points: 10,
+                color: '#10b981',
+                text: "Khẳng định nào sau đây là **đúng** về tính đơn điệu của hàm số $y = f(x)$ liên tục trên $K$?",
+                options: [
+                    "Nếu $f'(x) > 0, \\forall x \\in (a; b)$ thì hàm số đồng biến trên $(a; b)$.",
+                    "Nếu $f'(x) > 0, \\forall x \\in (a; b)$ thì hàm số nghịch biến trên $(a; b)$.",
+                    "Nếu $f'(x) = 0, \\forall x \\in (a; b)$ thì hàm số đồng biến trên $(a; b)$.",
+                    "Nếu $f'(x) < 0, \\forall x \\in (a; b)$ thì hàm số đồng biến trên $(a; b)$."
+                ],
+                correct: 0,
+                explanation: "Theo định lý cơ bản về tính đơn điệu: Nếu $f'(x) > 0$ với mọi $x \\in (a; b)$ thì hàm số $y = f(x)$ đồng biến trên khoảng $(a; b)$."
+            },
+
+            // --- 8 CÂU THÔNG HIỂU (TH - 20 Điểm) ---
+            {
+                id: 6,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Hàm số $y = x^3 - 3x^2 + 4$ **đồng biến** trên khoảng nào sau đây?",
+                options: [
+                    "$(0; 2)$",
+                    "$(-\\infty; 0)$ và $(2; +\\infty)$",
+                    "$(-\\infty; 2)$",
+                    "$(0; +\\infty)$"
+                ],
+                correct: 1,
+                explanation: "Đạo hàm $y' = 3x^2 - 6x = 3x(x - 2)$.<br>Cho $y' = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$.<br>Bảng xét dấu $y'$: $y' > 0$ khi $x \\in (-\\infty; 0) \\cup (2; +\\infty)$. Do đó hàm số đồng biến trên hai khoảng $(-\\infty; 0)$ và $(2; +\\infty)$."
+            },
+            {
+                id: 7,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Tìm giá trị cực đại $y_{CĐ}$ của hàm số $y = -x^3 + 3x - 1$.",
+                options: [
+                    "$y_{CĐ} = 1$",
+                    "$y_{CĐ} = -3$",
+                    "$y_{CĐ} = -1$",
+                    "$y_{CĐ} = 3$"
+                ],
+                correct: 0,
+                explanation: "Ta có $y' = -3x^2 + 3 = 0 \\Leftrightarrow x = \\pm 1$.<br>$y'' = -6x$. Tại $x = 1 \\implies y''(1) = -6 < 0 \\implies x = 1$ là điểm cực đại.<br>Giá trị cực đại $y_{CĐ} = y(1) = -(1)^3 + 3(1) - 1 = 1$."
+            },
+            {
+                id: 8,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Cho hàm số nhất biến $y = \\frac{2x + 1}{x - 1}$. Hàm số đã cho **nghịch biến** trên các khoảng nào?",
+                options: [
+                    "$(-\\infty; 1)$ và $(1; +\\infty)$",
+                    "$\\mathbb{R} \\setminus \\{1\\}$",
+                    "$(-\\infty; -1)$ và $(-1; +\\infty)$",
+                    "$(-\\infty; +\\infty)$"
+                ],
+                correct: 0,
+                explanation: "Tập xác định $D = \\mathbb{R} \\setminus \\{1\\}$.<br>Đạo hàm $y' = \\frac{2(-1) - 1(1)}{(x-1)^2} = \\frac{-3}{(x-1)^2} < 0, \\forall x \\neq 1$.<br>Do đó hàm số nghịch biến trên từng khoảng xác định $(-\\infty; 1)$ và $(1; +\\infty)$."
+            },
+            {
+                id: 9,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Cho hàm số $y = f(x)$ có bảng biến thiên phức tạp chứa điểm không xác định $\\|$ như hình bên. Số điểm **cực trị** của hàm số đã cho là:",
+                type: 'bbt_th9',
+                options: [
+                    "$1$",
+                    "$2$",
+                    "$3$",
+                    "$0$"
+                ],
+                correct: 0,
+                explanation: "Tại $x = 0$, $f'(x)$ không xác định và $f(x)$ có vạch kép $\\|$ không liên tục.<br>Tại $x = 2$, $f'(x)$ đổi dấu từ âm $(-)$ sang dương $(+)$ và $f(x)$ liên tục đạt giá trị $1$. Do đó hàm số chỉ có **1 điểm cực trị** tại $x = 2$."
+            },
+            {
+                id: 10,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Tìm tất cả các giá trị thực của tham số $m$ để hàm số $y = x^3 - 3mx^2 + 3x + 1$ **đồng biến trên $\\mathbb{R}$**.",
+                options: [
+                    "$-1 \\le m \\le 1$",
+                    "$m \\ge 1$ hoặc $m \\le -1$",
+                    "$m < 1$",
+                    "$-1 < m < 1$"
+                ],
+                correct: 0,
+                explanation: "Ta có $y' = 3x^2 - 6mx + 3$.<br>Để hàm số đồng biến trên $\\mathbb{R} \\Leftrightarrow y' \\ge 0, \\forall x \\in \\mathbb{R} \\Leftrightarrow \\Delta' = 9m^2 - 9 \\le 0 \\Leftrightarrow m^2 \\le 1 \\Leftrightarrow -1 \\le m \\le 1$."
+            },
+            {
+                id: 11,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Cho hàm số $y = x^4 - 2x^2 + 3$. Hàm số đã cho có bao nhiêu điểm cực trị?",
+                options: [
+                    "$1$",
+                    "$2$",
+                    "$3$",
+                    "$4$"
+                ],
+                correct: 2,
+                explanation: "Hàm trùng phương $y = ax^4 + bx^2 + c$ có $a = 1, b = -2$.<br>Vì $a \\cdot b = 1 \\cdot (-2) = -2 < 0$ nên hàm số có đúng $3$ điểm cực trị."
+            },
+            {
+                id: 12,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Hàm số $y = \\sqrt{4 - x^2}$ **đồng biến** trên khoảng nào dưới đây?",
+                options: [
+                    "$(-2; 0)$",
+                    "$(0; 2)$",
+                    "$(-2; 2)$",
+                    "$(0; +\\infty)$"
+                ],
+                correct: 0,
+                explanation: "TXĐ: $D = [-2; 2]$.<br>Đạo hàm $y' = \\frac{-2x}{2\\sqrt{4-x^2}} = \\frac{-x}{\\sqrt{4-x^2}}$.<br>Cho $y' > 0 \\Leftrightarrow -x > 0 \\Leftrightarrow x < 0$. Kết hợp TXĐ $\\implies x \\in (-2; 0)$."
+            },
+            {
+                id: 13,
+                level: 'TH',
+                levelName: 'Thông Hiểu',
+                points: 20,
+                color: '#0284c7',
+                text: "Cho hàm số $y = f(x)$ có bảng biến thiên dưới đây. Khẳng định nào sau đây là **sai**?",
+                type: 'bbt_th13',
+                options: [
+                    "Hàm số đạt cực tiểu tại $x = 2$.",
+                    "Hàm số đạt cực đại tại $x = 0$.",
+                    "Hàm số đồng biến trên $(-\\infty; -2)$.",
+                    "Giá trị cực đại của hàm số là $y_{CĐ} = 0$."
+                ],
+                correct: 3,
+                explanation: "Theo BBT, tại điểm cực đại $x = 0$, giá trị cực đại là $y_{CĐ} = 3$ (chứ không phải $0$). Do đó phát biểu 'Giá trị cực đại của hàm số là $y_{CĐ} = 0$' là sai."
+            },
+
+            // --- 2 CÂU VẬN DỤNG (VD - 30 Điểm - Bài toán thực tế) ---
+            {
+                id: 14,
+                level: 'VD',
+                levelName: 'Vận Dụng',
+                points: 30,
+                color: '#e11d48',
+                text: "Tìm tất cả các giá trị của tham số $m$ để hàm số $y = \\frac{x + 4}{x + m}$ **nghịch biến** trên khoảng $(-\\infty; 2)$.",
+                options: [
+                    "$m \\le -2$",
+                    "$-2 \\le m < 4$",
+                    "$m \\in (-2; 4)$",
+                    "$m \\in [4; +\\infty)$"
+                ],
+                correct: 0,
+                explanation: "Tập xác định $D = \\mathbb{R} \\setminus \\{-m\\}$.<br>Đạo hàm $y' = \\frac{m - 4}{(x+m)^2}$. Để hàm số nghịch biến trên $(-\\infty; 2)$ cần 2 điều kiện:<br>1) $y' < 0 \\Leftrightarrow m - 4 < 0 \\Leftrightarrow m < 4$.<br>2) Điểm gián đoạn $-m \\notin (-\\infty; 2) \\Leftrightarrow -m \\ge 2 \\Leftrightarrow m \\le -2$.<br>Kết hợp ta được $m \\le -2$."
+            },
+            {
+                id: 15,
+                level: 'VD',
+                levelName: 'Vận Dụng (Thực Tế)',
+                points: 30,
+                color: '#e11d48',
+                type: 'real_world',
+                text: "📌 **Bài toán Tối ưu hóa Doanh thu:**<br>Một doanh nghiệp sản xuất linh kiện điện tử nhận thấy lợi nhuận $P(x)$ (đơn vị: triệu đồng) phụ thuộc vào số lượng sản phẩm $x$ ($x > 0$) bán ra theo công thức:<br>$$P(x) = -x^3 + 18x^2 + 120x - 500$$<br>Hỏi doanh nghiệp cần sản xuất và bán ra bao nhiêu sản phẩm $x$ để đạt **lợi nhuận cực đại**?",
+                options: [
+                    "$x = 16$ sản phẩm",
+                    "$x = 10$ sản phẩm",
+                    "$x = 18$ sản phẩm",
+                    "$x = 20$ sản phẩm"
+                ],
+                correct: 0,
+                explanation: "Tính đạo hàm $P'(x) = -3x^2 + 36x + 120$.<br>Cho $P'(x) = 0 \\Leftrightarrow -3(x^2 - 12x - 40) = 0 \\Leftrightarrow x = 16$ (nhận do $x > 0$) hoặc $x = -2.5$ (loại).<br>Mặt khác $P''(x) = -6x + 36 \\implies P''(16) = -60 < 0$, do đó $x = 16$ là điểm cực đại.<br>Vậy sản xuất **16 sản phẩm** giúp đạt lợi nhuận tối đa."
+            }
+        ];
+
+        /* ==========================================================================
+           3. GAME STATE & SYSTEM VARS
+           ========================================================================== */
+        let answeredQuestions = new Array(questionsData.length).fill(false);
+        let currentQuestionIndex = -1;
+        let score = 0;
+        let isSpinning = false;
+        let currentAngle = 0;
+        let timerInterval = null;
+        let timeLeft = 45;
+
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function initKaTeX() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        /* ==========================================================================
+           4. HIGH-PRECISION SVG VARIATION TABLES (BBT) WITH COMPLETE ARROWS
+           ========================================================================== */
+        function renderVisualContent(type) {
+            const container = document.getElementById('visual-container');
+            container.innerHTML = '';
+
+            if (!type) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            if (type === 'bbt_nb1') {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-2 font-bold tracking-wider uppercase">Bảng Biến Thiên Của Hàm Số $y=f(x)$</div>
+                    <svg width="360" height="150" viewBox="0 0 360 150" class="text-slate-100 font-sans">
+                        <defs>
+                            <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+                            </marker>
+                            <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                            </marker>
+                        </defs>
+
+                        <!-- Table Grid Lines -->
+                        <line x1="10" y1="35" x2="350" y2="35" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="10" y1="70" x2="350" y2="70" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="55" y1="5" x2="55" y2="145" stroke="#475569" stroke-width="1.5"/>
+                        
+                        <!-- Row Titles -->
+                        <text x="28" y="25" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">x</text>
+                        <text x="28" y="55" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f'(x)</text>
+                        <text x="28" y="110" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f(x)</text>
+
+                        <!-- x Values -->
+                        <text x="75" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">-∞</text>
+                        <text x="150" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">0</text>
+                        <text x="235" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">2</text>
+                        <text x="325" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">+∞</text>
+
+                        <!-- f'(x) Signs -->
+                        <text x="110" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+                        <text x="150" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="190" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+                        <text x="235" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="280" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+
+                        <!-- f(x) Extremes & Arrows -->
+                        <text x="75" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">+∞</text>
+                        <text x="150" y="135" fill="#38bdf8" font-weight="bold" font-size="13" text-anchor="middle">-1</text>
+                        <text x="235" y="90" fill="#38bdf8" font-weight="bold" font-size="13" text-anchor="middle">3</text>
+                        <text x="325" y="135" fill="#94a3b8" font-size="11" text-anchor="middle">-∞</text>
+
+                        <!-- Explicit Arrows with Markers -->
+                        <line x1="88" y1="92" x2="138" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red)"/>
+                        <line x1="162" y1="128" x2="222" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+                        <line x1="248" y1="92" x2="310" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red)"/>
+                    </svg>
+                `;
+            } else if (type === 'bbt_nb2') {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-2 font-bold tracking-wider uppercase">Bảng Biến Thiên Cực Trị</div>
+                    <svg width="360" height="150" viewBox="0 0 360 150" class="text-slate-100 font-sans">
+                        <defs>
+                            <marker id="arrow-red2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+                            </marker>
+                            <marker id="arrow-green2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                            </marker>
+                        </defs>
+
+                        <line x1="10" y1="35" x2="350" y2="35" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="10" y1="70" x2="350" y2="70" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="55" y1="5" x2="55" y2="145" stroke="#475569" stroke-width="1.5"/>
+                        
+                        <text x="28" y="25" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">x</text>
+                        <text x="28" y="55" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f'(x)</text>
+                        <text x="28" y="110" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f(x)</text>
+
+                        <text x="75" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">-∞</text>
+                        <text x="150" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">-1</text>
+                        <text x="235" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">1</text>
+                        <text x="325" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">+∞</text>
+
+                        <text x="110" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+                        <text x="150" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="190" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+                        <text x="235" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="280" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+
+                        <text x="75" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">+∞</text>
+                        <text x="150" y="135" fill="#38bdf8" font-weight="bold" font-size="13" text-anchor="middle">1</text>
+                        <text x="235" y="90" fill="#fbbf24" font-weight="black" font-size="15" text-anchor="middle">5</text>
+                        <text x="325" y="135" fill="#94a3b8" font-size="11" text-anchor="middle">-∞</text>
+
+                        <line x1="88" y1="92" x2="138" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red2)"/>
+                        <line x1="162" y1="128" x2="222" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green2)"/>
+                        <line x1="248" y1="92" x2="310" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red2)"/>
+                    </svg>
+                `;
+            } else if (type === 'graph_nb4') {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-2 font-bold tracking-wider uppercase">Đồ Thị Hàm Số $y = f(x)$</div>
+                    <svg width="260" height="170" viewBox="-10 -10 260 170">
+                        <line x1="10" y1="90" x2="230" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-axis)"/>
+                        <line x1="100" y1="150" x2="100" y2="10" stroke="#64748b" stroke-width="2" marker-end="url(#arrow-axis)"/>
+                        <text x="235" y="94" fill="#94a3b8" font-size="12">x</text>
+                        <text x="96" y="5" fill="#94a3b8" font-size="12">y</text>
+                        <text x="88" y="104" fill="#94a3b8" font-size="11">O</text>
+
+                        <line x1="140" y1="90" x2="140" y2="130" stroke="#475569" stroke-dasharray="3,3"/>
+                        <line x1="100" y1="130" x2="140" y2="130" stroke="#475569" stroke-dasharray="3,3"/>
+                        <text x="138" y="85" fill="#cbd5e1" font-size="11">1</text>
+                        <text x="80" y="134" fill="#cbd5e1" font-size="11">-2</text>
+
+                        <path d="M 30,140 C 50,20 70,20 100,90 C 120,140 130,135 140,130 C 150,125 170,10 200,10" fill="none" stroke="#38bdf8" stroke-width="3"/>
+
+                        <circle cx="140" cy="130" r="4.5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>
+                        <circle cx="60" cy="50" r="4.5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>
+
+                        <defs>
+                            <marker id="arrow-axis" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+                            </marker>
+                        </defs>
+                    </svg>
+                `;
+            } else if (type === 'bbt_th9') {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-2 font-bold tracking-wider uppercase">Bảng Biến Thiên Điểm Không Xác Định (||)</div>
+                    <svg width="360" height="150" viewBox="0 0 360 150" class="text-slate-100 font-sans">
+                        <defs>
+                            <marker id="arrow-red3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+                            </marker>
+                            <marker id="arrow-green3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                            </marker>
+                        </defs>
+
+                        <line x1="10" y1="35" x2="350" y2="35" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="10" y1="70" x2="350" y2="70" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="55" y1="5" x2="55" y2="145" stroke="#475569" stroke-width="1.5"/>
+                        
+                        <!-- Double line || for non-continuous point x = 0 -->
+                        <line x1="148" y1="35" x2="148" y2="145" stroke="#f43f5e" stroke-width="1.5"/>
+                        <line x1="152" y1="35" x2="152" y2="145" stroke="#f43f5e" stroke-width="1.5"/>
+
+                        <text x="28" y="25" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">x</text>
+                        <text x="28" y="55" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f'(x)</text>
+                        <text x="28" y="110" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f(x)</text>
+
+                        <text x="75" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">-∞</text>
+                        <text x="150" y="25" fill="#f43f5e" font-weight="bold" font-size="13" text-anchor="middle">0</text>
+                        <text x="235" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">2</text>
+                        <text x="325" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">+∞</text>
+
+                        <text x="110" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+                        <text x="190" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+                        <text x="235" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="280" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+
+                        <text x="75" y="135" fill="#94a3b8" font-size="11" text-anchor="middle">-∞</text>
+                        <text x="135" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">+∞</text>
+                        <text x="165" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">2</text>
+                        <text x="235" y="135" fill="#38bdf8" font-weight="bold" font-size="13" text-anchor="middle">1</text>
+                        <text x="325" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">+∞</text>
+
+                        <line x1="88" y1="128" x2="128" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green3)"/>
+                        <line x1="175" y1="92" x2="222" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red3)"/>
+                        <line x1="248" y1="128" x2="310" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green3)"/>
+                    </svg>
+                `;
+            } else if (type === 'bbt_th13') {
+                container.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-2 font-bold tracking-wider uppercase">Bảng Biến Thiên Hàm Bậc 3</div>
+                    <svg width="360" height="150" viewBox="0 0 360 150" class="text-slate-100 font-sans">
+                        <defs>
+                            <marker id="arrow-red4" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+                            </marker>
+                            <marker id="arrow-green4" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                            </marker>
+                        </defs>
+
+                        <line x1="10" y1="35" x2="350" y2="35" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="10" y1="70" x2="350" y2="70" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="55" y1="5" x2="55" y2="145" stroke="#475569" stroke-width="1.5"/>
+
+                        <text x="28" y="25" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">x</text>
+                        <text x="28" y="55" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f'(x)</text>
+                        <text x="28" y="110" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">f(x)</text>
+
+                        <text x="75" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">-∞</text>
+                        <text x="150" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">0</text>
+                        <text x="235" y="25" fill="#fbbf24" font-weight="bold" font-size="13" text-anchor="middle">2</text>
+                        <text x="325" y="25" fill="#cbd5e1" font-size="12" text-anchor="middle">+∞</text>
+
+                        <text x="110" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+                        <text x="150" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="190" y="55" fill="#f43f5e" font-weight="bold" font-size="16" text-anchor="middle">-</text>
+                        <text x="235" y="55" fill="#94a3b8" font-size="12" text-anchor="middle">0</text>
+                        <text x="280" y="55" fill="#10b981" font-weight="bold" font-size="16" text-anchor="middle">+</text>
+
+                        <text x="75" y="135" fill="#94a3b8" font-size="11" text-anchor="middle">-∞</text>
+                        <text x="150" y="90" fill="#fbbf24" font-weight="black" font-size="15" text-anchor="middle">3</text>
+                        <text x="235" y="135" fill="#38bdf8" font-weight="bold" font-size="13" text-anchor="middle">-1</text>
+                        <text x="325" y="90" fill="#94a3b8" font-size="11" text-anchor="middle">+∞</text>
+
+                        <line x1="88" y1="128" x2="138" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green4)"/>
+                        <line x1="162" y1="92" x2="222" y2="128" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow-red4)"/>
+                        <line x1="248" y1="128" x2="310" y2="92" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-green4)"/>
+                    </svg>
+                `;
+            } else if (type === 'real_world') {
+                container.innerHTML = `
+                    <div class="flex items-center gap-3 text-amber-300 text-xs font-semibold bg-amber-500/10 p-3.5 rounded-xl border border-amber-500/20 w-full">
+                        <i class="fa-solid fa-chart-line text-2xl text-amber-400"></i>
+                        <span>Mô hình khảo sát Lợi nhuận $P(x)$ trong quản trị sản xuất thực tế. Đỉnh cực đại đại diện cho quy mô tối ưu.</span>
+                    </div>
+                `;
+            }
+        }
+
+        /* ==========================================================================
+           5. CANVAS WHEEL RENDERING & SPINNING LOGIC
+           ========================================================================== */
+        function drawWheel() {
+            const numSlices = questionsData.length;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2 - 15;
+            const sliceAngle = (2 * Math.PI) / numSlices;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSlices; i++) {
+                const startAngle = currentAngle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+                const q = questionsData[i];
+
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+
+                if (answeredQuestions[i]) {
+                    ctx.fillStyle = '#334155';
+                } else {
+                    ctx.fillStyle = q.color;
+                }
+                ctx.fill();
+
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#0f172a';
+                ctx.stroke();
+
+                // Slice Text labels
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+
+                let label = `Câu ${q.id}`;
+                if (answeredQuestions[i]) label += ' ✓';
+                ctx.fillText(label, radius - 20, 5);
+
+                ctx.restore();
+            }
+
+            // Outer Golden Rim
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.stroke();
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+
+            const remaining = answeredQuestions.map((val, idx) => val ? -1 : idx).filter(v => v !== -1);
+            if (remaining.length === 0) {
+                showCompletionModal();
+                return;
+            }
+
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+            document.getElementById('wheel-status').innerHTML = '⏳ Vòng quay đang chạy...';
+
+            const targetIdx = remaining[Math.floor(Math.random() * remaining.length)];
+            const numSlices = questionsData.length;
+            const sliceAngle = (2 * Math.PI) / numSlices;
+            
+            const targetSliceCenter = targetIdx * sliceAngle + sliceAngle / 2;
+            let desiredAngle = (3 * Math.PI / 2) - targetSliceCenter;
+
+            const fullSpins = 5 * 2 * Math.PI;
+            const finalAngle = currentAngle + fullSpins + ((desiredAngle - (currentAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+
+            const spinDuration = 4200;
+            const startTime = performance.now();
+            const initialAngle = currentAngle;
+            let lastAudioAngle = currentAngle;
+
+            function animateSpin(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / spinDuration, 1);
+                
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                currentAngle = initialAngle + (finalAngle - initialAngle) * easeOut;
+
+                if (Math.abs(currentAngle - lastAudioAngle) >= sliceAngle) {
+                    playClickSound();
+                    lastAudioAngle = currentAngle;
+                }
+
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    isSpinning = false;
+                    document.getElementById('spinBtn').disabled = false;
+                    document.getElementById('wheel-status').innerHTML = `🎉 Trúng **Câu số ${questionsData[targetIdx].id}**!`;
+                    playCorrectSound();
+
+                    setTimeout(() => {
+                        openQuestionModal(targetIdx);
+                    }, 500);
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        }
+
+        /* ==========================================================================
+           6. QUESTION MODAL & ANSWER VALIDATION
+           ========================================================================== */
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 45;
+            document.getElementById('timer-display').innerText = `${timeLeft}s`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = `${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    autoTimeOut();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function autoTimeOut() {
+            playWrongSound();
+            const q = questionsData[currentQuestionIndex];
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => btn.disabled = true);
+
+            optionBtns[q.correct].classList.remove('bg-slate-900/60', 'border-slate-700');
+            optionBtns[q.correct].classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
+
+            document.getElementById('result-feedback').innerHTML = `<span class="text-rose-400 flex items-center gap-1.5"><i class="fa-solid fa-clock text-lg"></i> Hết giờ làm bài!</span>`;
+
+            answeredQuestions[currentQuestionIndex] = true;
+            updateQuestionGrid();
+            drawWheel();
+
+            document.getElementById('explanation-text').innerHTML = q.explanation;
+            document.getElementById('explanation-box').classList.remove('hidden');
+            document.getElementById('next-btn').classList.remove('hidden');
+
+            if (window.renderMathInElement) {
+                renderMathInElement(document.getElementById('explanation-box'), {
+                    delimiters: [{left: '$', right: '$', display: false}, {left: '$$', right: '$$', display: true}]
+                });
+            }
+        }
+
+        function openQuestionModal(idx) {
+            currentQuestionIndex = idx;
+            const q = questionsData[idx];
+
+            const levelTag = document.getElementById('modal-level-tag');
+            levelTag.innerText = `${q.levelName}`;
+            if (q.level === 'NB') {
+                levelTag.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            } else if (q.level === 'TH') {
+                levelTag.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/40';
+            } else {
+                levelTag.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            }
+
+            document.getElementById('modal-title').innerText = `Câu Hỏi #${q.id}`;
+            document.getElementById('modal-points').innerText = `+${q.points} Điểm`;
+            document.getElementById('question-text').innerHTML = q.text;
+
+            renderVisualContent(q.type);
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const optionLabels = ['A', 'B', 'C', 'D'];
+            q.options.forEach((opt, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full p-3.5 rounded-2xl border border-slate-700 bg-slate-900/60 hover:bg-indigo-900/40 hover:border-indigo-500 text-left transition flex items-start gap-3 group`;
+                btn.onclick = () => selectAnswer(optIdx);
+                btn.innerHTML = `
+                    <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-extrabold text-xs flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition flex-shrink-0">
+                        ${optionLabels[optIdx]}
+                    </span>
+                    <span class="text-xs md:text-sm font-medium text-slate-200 mt-0.5">${opt}</span>
+                `;
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('explanation-box').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('result-feedback').innerHTML = '';
+
+            const modal = document.getElementById('questionModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('modalContainer').classList.remove('scale-95');
+
+            if (window.renderMathInElement) {
+                renderMathInElement(document.getElementById('questionModal'), {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+
+            startTimer();
+        }
+
+        function selectAnswer(selectedIndex) {
+            stopTimer();
+            const q = questionsData[currentQuestionIndex];
+            const optionBtns = document.querySelectorAll('.option-btn');
+            
+            optionBtns.forEach(btn => btn.disabled = true);
+
+            const feedback = document.getElementById('result-feedback');
+            const explanationBox = document.getElementById('explanation-box');
+
+            if (selectedIndex === q.correct) {
+                playCorrectSound();
+                optionBtns[selectedIndex].classList.remove('bg-slate-900/60', 'border-slate-700');
+                optionBtns[selectedIndex].classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
+
+                feedback.innerHTML = `<span class="text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-lg"></i> Chính xác! +${q.points} điểm</span>`;
+                
+                score += q.points;
+                updateScoreboard();
+
+                confetti({
+                    particleCount: 55,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+
+            } else {
+                playWrongSound();
+                optionBtns[selectedIndex].classList.remove('bg-slate-900/60', 'border-slate-700');
+                optionBtns[selectedIndex].classList.add('bg-rose-500/20', 'border-rose-500', 'text-rose-200');
+
+                optionBtns[q.correct].classList.remove('bg-slate-900/60', 'border-slate-700');
+                optionBtns[q.correct].classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-200');
+
+                feedback.innerHTML = `<span class="text-rose-400 flex items-center gap-1.5"><i class="fa-solid fa-circle-xmark text-lg"></i> Chưa chính xác!</span>`;
+            }
+
+            answeredQuestions[currentQuestionIndex] = true;
+            updateQuestionGrid();
+            drawWheel();
+
+            document.getElementById('explanation-text').innerHTML = q.explanation;
+            explanationBox.classList.remove('hidden');
+            document.getElementById('next-btn').classList.remove('hidden');
+
+            if (window.renderMathInElement) {
+                renderMathInElement(document.getElementById('explanation-box'), {
+                    delimiters: [{left: '$', right: '$', display: false}, {left: '$$', right: '$$', display: true}]
+                });
+            }
+        }
+
+        function closeModal() {
+            stopTimer();
+            const modal = document.getElementById('questionModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('modalContainer').classList.add('scale-95');
+
+            if (answeredQuestions.every(val => val === true)) {
+                setTimeout(showCompletionModal, 400);
+            }
+        }
+
+        /* ==========================================================================
+           7. UTILITIES & UI SCORE UPDATES
+           ========================================================================== */
+        function updateScoreboard() {
+            document.getElementById('score-display').innerText = score;
+            const completedCount = answeredQuestions.filter(Boolean).length;
+            document.getElementById('progress-display').innerText = `${completedCount}/15`;
+        }
+
+        function updateQuestionGrid() {
+            const grid = document.getElementById('question-grid');
+            grid.innerHTML = '';
+
+            questionsData.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                const isDone = answeredQuestions[idx];
+
+                btn.className = `py-2.5 px-1 rounded-xl text-xs font-black flex flex-col items-center justify-center transition border ${
+                    isDone 
+                    ? 'bg-slate-800 text-slate-500 border-slate-700 line-through opacity-60' 
+                    : 'hover:scale-105 shadow-md'
+                }`;
+
+                if (!isDone) {
+                    if (q.level === 'NB') {
+                        btn.className += ' bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20';
+                    } else if (q.level === 'TH') {
+                        btn.className += ' bg-sky-500/10 text-sky-300 border-sky-500/30 hover:bg-sky-500/20';
+                    } else {
+                        btn.className += ' bg-rose-500/10 text-rose-300 border-rose-500/30 hover:bg-rose-500/20';
+                    }
+                }
+
+                btn.onclick = () => {
+                    if (!isSpinning && !isDone) {
+                        openQuestionModal(idx);
+                    }
+                };
+
+                btn.innerHTML = `
+                    <span>Câu ${q.id}</span>
+                    <span class="text-[9px] font-normal opacity-80">${q.level}</span>
+                `;
+
+                grid.appendChild(btn);
+            });
+        }
+
+        function showCompletionModal() {
+            const modal = document.getElementById('completionModal');
+            document.getElementById('final-score').innerText = score;
+
+            let badge = "Tập Sự Giải Tích";
+            if (score >= 230) badge = "Bậc Thầy Cực Trị & Hàm Số 🌟";
+            else if (score >= 160) badge = "Chuyên Gia Khảo Sát 🎓";
+            else if (score >= 90) badge = "Học Sinh Khá Toán 📚";
+
+            document.getElementById('final-badge').innerText = badge;
+            document.getElementById('final-correct').innerText = `${answeredQuestions.filter(Boolean).length} / 15`;
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+
+            confetti({
+                particleCount: 130,
+                spread: 100,
+                origin: { y: 0.4 }
+            });
+        }
+
+        function hideCompletionModal() {
+            document.getElementById('completionModal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function resetGame() {
+            stopTimer();
+            answeredQuestions = new Array(questionsData.length).fill(false);
+            score = 0;
+            currentAngle = 0;
+            updateScoreboard();
+            updateQuestionGrid();
+            drawWheel();
+            document.getElementById('wheel-status').innerHTML = '👉 Nhấn nút <strong class="text-amber-400">QUAY</strong> để thử vận may chọn câu hỏi!';
+        }
+
+        window.onload = function() {
+            drawWheel();
+            updateQuestionGrid();
+            updateScoreboard();
+        };
+    </script>
+</body>
+</html>
